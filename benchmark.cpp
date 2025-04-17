@@ -2,15 +2,15 @@
  * A simple insert & delete benchmark for (unordered) sets (e.g., hash tables).
  */
 
- #include <thread>
- #include <cstdlib>
- #include <atomic>
- #include <string>
- #include <cstring>
- #include <iostream>
- #include <time.h>
- 
- #include "util.h"
+#include <thread>
+#include <cstdlib>
+#include <atomic>
+#include <string>
+#include <cstring>
+#include <iostream>
+#include <time.h>
+
+#include "util.h"
 #include "hashmap.h"
  
  using namespace std;

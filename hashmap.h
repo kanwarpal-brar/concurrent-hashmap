@@ -18,7 +18,7 @@ using namespace std;
 
 class CASHashmap {
 private:
-    static simple_record_manager<atomic<int>[]> * recordmanager;
+    static simple_record_manager<atomic<int>*> * recordmanager;
     enum {
         MARKED_MASK = (int) 0x80000000,     // most significant bit of a 32-bit key
         TOMBSTONE = (int) 0x7FFFFFFF,       // largest value that doesn't use bit MARKED_MASK

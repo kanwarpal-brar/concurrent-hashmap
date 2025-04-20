@@ -9,8 +9,6 @@
 #include <cstring>
 #include <iostream>
 #include <time.h>
-
-#include "util.h"
 #include "hashmap.h"
  
  using namespace std;

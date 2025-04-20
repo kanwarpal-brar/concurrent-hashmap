@@ -169,7 +169,6 @@
       * 
       */
      
-     g->ds->printDebuggingDetails();
      
      auto numTotalOps = g->numTotalOps.getTotal();
      auto dsSumOfKeys = g->ds->getSumOfKeys();

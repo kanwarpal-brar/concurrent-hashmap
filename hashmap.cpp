@@ -5,14 +5,14 @@
 
 using namespace std;
 
-simple_record_manager<atomic<int> *> * CASHashmap::recordmanager = new simple_record_manager<atomic<int> *>(MAX_THREADS);
+simple_record_manager<atomic<int>[]> * CASHashmap::recordmanager = new simple_record_manager<atomic<int>[]>(MAX_THREADS);
 
 
 // allocate and zero data array
 void CASHashmap::table::allocateData(int tid, int capacity) {
     assert(capacity > 0);
     auto guard = recordmanager->getGuard(tid);
-    auto memory = recordmanager->allocate<atomic<int> *>(tid);
+    auto memory = recordmanager->allocate<atomic<int>[]>(tid);
     data = new(memory) atomic<int>[capacity];
     // Initialize using a loop with relaxed stores
     for (int i = 0; i < capacity; ++i) {

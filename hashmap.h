@@ -32,9 +32,9 @@ private:
         char padding4[PADDING_BYTES];
         int capacity = 0;  // capacity of data array
         int oldCapacity = 0;  // capacity of old array
-        counter approxInserts;
+        counter * approxInserts = nullptr;
         char padding2[2*PADDING_BYTES];
-        counter approxErase;
+        counter * approxErase = nullptr;
         char padding3[2*PADDING_BYTES];
         atomic<int> chunksClaimed = 0;  // during expansion, the chunk numbers claimed so far [0, ceil(capacity/4096))
         atomic<int> chunksDone = 0;  // during expansion, number of chunks (of total) finished so far, stop at capacity/4096

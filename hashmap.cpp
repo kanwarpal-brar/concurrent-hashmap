@@ -19,7 +19,7 @@ void CASHashmap::table::allocateData(int tid, int capacity) {
 }
 
 // constructor
-CASHashmap::table::table(table *t, int newCapacity, int numThreads, int tid): old(t->data), oldCapacity(t->capacity), chunksClaimed(0), chunksDone(0), approxInserts(numThreads), approxErase(numThreads) {
+CASHashmap::table::table(table *t, int newCapacity, int numThreads, int tid): old(t->data), oldCapacity(t->capacity), chunksClaimed(0), chunksDone(0), approxInserts(new counter(numThreads)), approxErase(new counter(numThreads)) {
     assert(newCapacity > 0);
     assert(numThreads >= 1);
     capacity = max(newCapacity, MINIMUMSIZE);  // enforce a minimum size on expansion, don't want to go to 0 just because there's no keys
@@ -27,7 +27,7 @@ CASHashmap::table::table(table *t, int newCapacity, int numThreads, int tid): ol
 }
 
 // alt constructor: overrides minimum size
-CASHashmap::table::table(int _capacity, int numThreads, int tid): capacity(_capacity), chunksClaimed(0), chunksDone(0), approxInserts(numThreads), approxErase(numThreads) {
+CASHashmap::table::table(int _capacity, int numThreads, int tid): capacity(_capacity), chunksClaimed(0), chunksDone(0), approxInserts(new counter(numThreads)), approxErase(new counter(numThreads)) {
     allocateData(tid, _capacity);
 }
 
@@ -69,16 +69,16 @@ bool CASHashmap::expandAsNeeded(const int tid, table * t, int i) {
     // assumption: guard already held
     helpExpansion(tid, t);  // start off by seeing if there's an expansion to help
     int half = (t->capacity) / 2;
-    int approxUsed = t->approxInserts.get();
+    int approxUsed = t->approxInserts->get();
     if (approxUsed > half) {
-        int approxKeys = approxUsed - t->approxErase.get();
+        int approxKeys = approxUsed - t->approxErase->get();
         startExpansion(tid, t, approxKeys*SIZEFACTOR);
         return true;
     }
     if (i > PROBE_MAX_TOLERANCE) {
-        int exactUsed = t->approxInserts.getAccurate();
+        int exactUsed = t->approxInserts->getAccurate();
         if (exactUsed > half) {
-            int exactKeys = exactUsed - t->approxErase.getAccurate();
+            int exactKeys = exactUsed - t->approxErase->getAccurate();
             startExpansion(tid, t, exactKeys*SIZEFACTOR);
             return true;
         }
@@ -174,7 +174,7 @@ retry:
             // found an empty slot, try to insert
             int null = EMPTY;  // local copy
             if (t->data[index].compare_exchange_strong(null, key)) {
-                t->approxInserts.inc(tid);
+                t->approxInserts->inc(tid);
                 return true;  // CAS success, we inserted
             } else {
                 // Failed CAS, someone inserted
@@ -220,7 +220,7 @@ retry:
             // found our target, try to CAS
             int k = key;  // local duplicate
             if (t->data[index].compare_exchange_strong(k, TOMBSTONE)) {
-                t->approxErase.inc(tid);
+                t->approxErase->inc(tid);
                 return true;  // successfully removed
             }
             // else: failed CAS, must mean someone removed before us or expansion

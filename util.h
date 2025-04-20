@@ -155,7 +155,7 @@ public:
     }
 };
 
-uint32_t murmur3(uint32_t key) {
+inline uint32_t murmur3(uint32_t key) {
     constexpr uint32_t seed = 0x1a8b714c;
     constexpr uint32_t c1 = 0xCC9E2D51;
     constexpr uint32_t c2 = 0x1B873593;
@@ -179,4 +179,3 @@ uint32_t murmur3(uint32_t key) {
     h ^= (h>>16);
     return h;
 }
-

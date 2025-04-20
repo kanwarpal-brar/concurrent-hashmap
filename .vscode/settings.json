@@ -2,6 +2,14 @@
     "files.associations": {
         "*.cc": "cpp",
         "part-r-00000": "plaintext",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "__locale": "cpp",
+        "bitset": "cpp",
+        "memory": "cpp",
+        "optional": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "variant": "cpp",
+        "vector": "cpp"
     }
 }

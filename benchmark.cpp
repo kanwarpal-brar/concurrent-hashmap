@@ -28,7 +28,7 @@
      volatile char padding4[PADDING_BYTES];
      atomic_int running;         // used for a custom barrier implementation (how many threads are waiting?)
      volatile char padding5[PADDING_BYTES];
-     Hashmap * ds;
+     CASHashmap * ds;
      debugCounter numTotalOps;   // already has padding built in at the beginning and end
      debugCounter keyChecksum;
      int millisToRun;
@@ -37,7 +37,7 @@
      int tableSize;
      volatile char padding7[PADDING_BYTES];
      
-     globals_t(int _millisToRun, int _totalThreads, int _keyRangeSize, int _tableSize, Hashmap * _ds) {
+     globals_t(int _millisToRun, int _totalThreads, int _keyRangeSize, int _tableSize, CASHashmap * _ds) {
          for (int i=0;i<MAX_THREADS;++i) {
              rngs[i].setSeed(i+1); // +1 because we don't want thread 0 to get a seed of 0, since seeds of 0 usually mean all random numbers are zero...
          }
@@ -64,7 +64,7 @@
  
  void runExperiment(int keyRangeSize, int tableSize, int millisToRun, int totalThreads) {
      // create globals struct that all threads will access (with padding to prevent false sharing on control logic meta data)
-     auto dataStructure = new Hashmap(totalThreads, tableSize);
+     auto dataStructure = new CASHashmap(totalThreads, tableSize);
      auto g = new globals_t(millisToRun, totalThreads, keyRangeSize, tableSize, dataStructure);
      
      /**

@@ -2,6 +2,7 @@
 #pragma once
 #include <atomic>
 #include <cmath>
+#include "util.h"
 #include "external/recordmgr/record_manager.h"
 using namespace std;
 

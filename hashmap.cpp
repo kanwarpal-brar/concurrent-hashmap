@@ -5,16 +5,14 @@
 
 using namespace std;
 
-simple_record_manager<atomic<int>*> * CASHashmap::recordmanager = new simple_record_manager<atomic<int>*>(MAX_THREADS);
+simple_record_manager<CASHashmap::table> * CASHashmap::recordmanager = new simple_record_manager<table>(MAX_THREADS);
 
 
 // allocate and zero data array
 void CASHashmap::table::allocateData(int tid, int capacity) {
     assert(capacity > 0);
-    auto guard = recordmanager->getGuard(tid);
-    auto memory = recordmanager->allocate<atomic<int>*>(tid);
-    data = new(memory) atomic<int>[capacity];
-    // Initialize using a loop with relaxed stores
+    // simple contiguous array
+    data = new atomic<int>[capacity];
     for (int i = 0; i < capacity; ++i) {
         data[i].store(EMPTY, std::memory_order_relaxed);
     }
@@ -35,9 +33,8 @@ CASHashmap::table::table(int _capacity, int numThreads, int tid): capacity(_capa
 
 // destructor
 CASHashmap::table::~table() {
-    auto guard = recordmanager->getGuard(0); // dummy id
-    recordmanager->deallocate(0, data);
-    // old is handled by external
+    delete[] data;
+    delete[] old;
 }
 
 
@@ -48,14 +45,16 @@ CASHashmap::table::~table() {
  * @param _capacity is the INITIAL size of the hash table (maximum number of elements it can contain WITHOUT expansion)
  */
 CASHashmap::CASHashmap(const int _numThreads, const int _capacity)
-: numThreads(_numThreads), initCapacity(_capacity), currentTable(new table(initCapacity, numThreads)) { }
+: numThreads(_numThreads), initCapacity(_capacity) {
+    auto guard = recordmanager->getGuard(0);  // dummy tid
+    currentTable = new(recordmanager->allocate<table>(0)) table(initCapacity, numThreads);
+}
 
 // destructor: clean up any allocated memory, etc.
 CASHashmap::~CASHashmap() {
     auto guard = recordmanager->getGuard(0); // dummy tid
     table *t = currentTable;
     if (t) {
-        recordmanager->deallocate(0, t->old);
         recordmanager->deallocate(0, t);
     }
     // currentTable itself is an atomic pointer, not dynamically allocated, so no delete needed for it.
@@ -109,10 +108,12 @@ void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
     // auto guard = recordmanager->getGuard(tid); Assumption: guard already held
     if (currentTable == t) {
         // int cap = t->capacity;
-        table *t_new = new table(t, newSize, numThreads, tid);
+        auto mem = recordmanager->allocate<table>(tid);
+        table *t_new = new(mem) table(t, newSize, numThreads, tid);
         if  (!currentTable.compare_exchange_strong(t, t_new)) {
-            delete t_new;  // failed to cas, delete the table
-        } else recordmanager->retire(tid, t_new->old);  // retire old table data
+            t_new->old = nullptr; // override
+            recordmanager->deallocate(tid, t_new);  // failed to cas, delete the table
+        } else recordmanager->retire(tid, t);  // retire old table data
         // else TPRINT("Expanding Table at: " << timer.getElapsedMillis() << "ms " << cap << "->" << newSize)
     }
     helpExpansion(tid, currentTable);  // let's help expand now

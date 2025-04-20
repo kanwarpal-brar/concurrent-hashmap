@@ -18,7 +18,6 @@ using namespace std;
 
 class CASHashmap {
 private:
-    static simple_record_manager<atomic<int>*> * recordmanager;
     enum {
         MARKED_MASK = (int) 0x80000000,     // most significant bit of a 32-bit key
         TOMBSTONE = (int) 0x7FFFFFFF,       // largest value that doesn't use bit MARKED_MASK
@@ -54,8 +53,7 @@ private:
         ~table();
     };
 
-
-
+    static simple_record_manager<table> * recordmanager;
 
     bool expandAsNeeded(const int tid, table * t, int i);
     void helpExpansion(const int tid, table * t);

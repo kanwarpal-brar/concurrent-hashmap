@@ -5,6 +5,9 @@
 
 using namespace std;
 
+simple_record_manager<atomic<int> *> * CASHashmap::recordmanager = new simple_record_manager<atomic<int> *>(MAX_THREADS);
+
+
 // allocate and zero data array
 void CASHashmap::table::allocateData(int tid, int capacity) {
     assert(capacity > 0);

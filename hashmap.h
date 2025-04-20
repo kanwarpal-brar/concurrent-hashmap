@@ -78,7 +78,3 @@ public:
     bool erase(const int tid, const int & key, bool disableExpansion = false);
     int64_t getSumOfKeys();
 };
-
-// Define and initialize the static member variable
-simple_record_manager<atomic<int> *> * CASHashmap::recordmanager = new simple_record_manager<atomic<int> *>(MAX_THREADS);
-

@@ -1,5 +1,4 @@
 #include "hashmap.h"
-#include "util.h"
 #include <cmath>
 #include <assert.h>
 #include <algorithm>

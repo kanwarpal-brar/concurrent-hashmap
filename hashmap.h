@@ -45,10 +45,10 @@ private:
         void allocateData(int tid, int capacity);
 
         // constructor
-        table(int tid, table *t, int newCapacity = -1, int numThreads = 1);
+        table(table *t, int newCapacity = -1, int numThreads = 1, int tid = 0);
 
         // alt constructor: overrides minimum size
-        table(int tid, int _capacity, int numThreads = 1);
+        table(int _capacity, int numThreads = 1, int tid = 0);
 
         // destructor
         ~table();

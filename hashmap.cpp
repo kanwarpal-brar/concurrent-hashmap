@@ -19,7 +19,7 @@ void CASHashmap::table::allocateData(int tid, int capacity) {
 }
 
 // constructor
-CASHashmap::table::table(int tid, table *t, int newCapacity, int numThreads): old(t->data), oldCapacity(t->capacity), chunksClaimed(0), chunksDone(0), approxInserts(numThreads), approxErase(numThreads) {
+CASHashmap::table::table(table *t, int newCapacity, int numThreads, int tid): old(t->data), oldCapacity(t->capacity), chunksClaimed(0), chunksDone(0), approxInserts(numThreads), approxErase(numThreads) {
     assert(newCapacity > 0);
     assert(numThreads >= 1);
     capacity = max(newCapacity, MINIMUMSIZE);  // enforce a minimum size on expansion, don't want to go to 0 just because there's no keys
@@ -27,7 +27,7 @@ CASHashmap::table::table(int tid, table *t, int newCapacity, int numThreads): ol
 }
 
 // alt constructor: overrides minimum size
-CASHashmap::table::table(int tid = 0, int _capacity, int numThreads): capacity(_capacity), chunksClaimed(0), chunksDone(0), approxInserts(numThreads), approxErase(numThreads) {
+CASHashmap::table::table(int _capacity, int numThreads, int tid): capacity(_capacity), chunksClaimed(0), chunksDone(0), approxInserts(numThreads), approxErase(numThreads) {
     allocateData(tid, _capacity);
 }
 
@@ -107,7 +107,7 @@ void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
     // auto guard = recordmanager->getGuard(tid); Assumption: guard already held
     if (currentTable == t) {
         // int cap = t->capacity;
-        table *t_new = new table(tid, t, newSize, numThreads);
+        table *t_new = new table(t, newSize, numThreads, tid);
         if  (!currentTable.compare_exchange_strong(t, t_new)) {
             delete t_new;  // failed to cas, delete the table
         } else recordmanager->retire(tid, t_new->old);  // retire old table data

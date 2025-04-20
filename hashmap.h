@@ -39,9 +39,12 @@ private:
         atomic<int> chunksClaimed = 0;  // during expansion, the chunk numbers claimed so far [0, ceil(capacity/4096))
         atomic<int> chunksDone = 0;  // during expansion, number of chunks (of total) finished so far, stop at capacity/4096
         char padding5[2*PADDING_BYTES];
-
+        
         // allocate and zero data array
         void allocateData(int tid, int capacity);
+
+        // default constructor
+        table() {}; // for record manager use
 
         // constructor
         table(table *t, int newCapacity = -1, int numThreads = 1, int tid = 0);

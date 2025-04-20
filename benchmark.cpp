@@ -1,6 +1,4 @@
-/**
- * A simple insert & delete benchmark for (unordered) sets (e.g., hash tables).
- */
+#pragma once
 
 #include <thread>
 #include <cstdlib>

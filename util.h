@@ -1,5 +1,4 @@
-#ifndef UTIL_H
-#define UTIL_H
+#pragma once
 
 #include <chrono>
 #include <atomic>
@@ -180,6 +179,4 @@ uint32_t murmur3(uint32_t key) {
     h ^= (h>>16);
     return h;
 }
-
-#endif /* UTIL_H */
 

@@ -145,8 +145,6 @@ bool CASHashmap::insertIfAbsent(const int tid, const int & key, bool disableExpa
     assert(key != EMPTY);
     assert(key != TOMBSTONE);
 
-retry:
-
     auto guard = recordmanager->getGuard(tid);
 
     table *t = currentTable;
@@ -156,7 +154,7 @@ retry:
     // Start probe insert loop
     assert(t->capacity > 0);
     for (int i = 0; i < t->capacity; ++i) {
-        if (!disableExpansion && expandAsNeeded(tid, t, i)) goto retry;  // check (and help) expansion, then retry insert
+        if (!disableExpansion && expandAsNeeded(tid, t, i)) return insertIfAbsent(tid, key);  // check (and help) expansion, then retry insert
 
         assert(h >= 0);
         assert(t->capacity >= 0);
@@ -165,10 +163,7 @@ retry:
         assert(index < t->capacity);
         int found = t->data[index]; // grab data in the current table
         assert(!(disableExpansion && (found & MARKED_MASK)));  // make sure we're not double expanding
-        if (found & MARKED_MASK) {
-            helpExpansion(tid, currentTable);
-            goto retry;  // we found a marked bit, expension is ongoing; help out
-        }
+        if (found & MARKED_MASK) return insertIfAbsent(tid, key);
         else if (found == key) return false;  // found target key, cannot insert
         else if (found == EMPTY) {
             // found an empty slot, try to insert
@@ -179,10 +174,7 @@ retry:
             } else {
                 // Failed CAS, someone inserted
                 found = t->data[index];  // update found value
-                if (found & MARKED_MASK) {
-                    helpExpansion(tid, currentTable);
-                    goto retry;  // evidence of expansion, let's retry to help
-                }
+                if (found & MARKED_MASK) return insertIfAbsent(tid, key);
                 else if (found == key) return false;  // found the key we were to insert, return false
             }
         }
@@ -197,8 +189,6 @@ bool CASHashmap::erase(const int tid, const int & key, bool disableExpansion) {
     assert(key != EMPTY);
     assert(key != TOMBSTONE);
 
-retry:
-
     auto guard = recordmanager->getGuard(tid);
 
     table *t = currentTable;
@@ -207,14 +197,11 @@ retry:
 
     // start probe and delete loop
     for (int i = 0; i < t->capacity; i++) {
-        if (!disableExpansion && expandAsNeeded(tid, t, i / 2)) goto retry;  // help expansion, then erase on new table
+        if (!disableExpansion && expandAsNeeded(tid, t, i / 2)) return erase(tid, key);  // help expansion, then erase on new table
 
         int index = (h + i) % t->capacity;  // grab index
         int found = t->data[index];  // grab current data at point
-        if (found & MARKED_MASK) {
-            helpExpansion(tid, currentTable);
-            goto retry;  // expansion is ongoing, help out then erase after
-        }
+        if (found & MARKED_MASK) return erase(tid, key);
         if (found == EMPTY) return false;  // we found an empty, this probably means key is not present
         else if (found == key) {
             // found our target, try to CAS
@@ -225,11 +212,7 @@ retry:
             }
             // else: failed CAS, must mean someone removed before us or expansion
             found = t->data[index];
-            if (found & MARKED_MASK) {
-                helpExpansion(tid, currentTable);
-                goto retry;
-            }
-
+            if (found & MARKED_MASK) return erase(tid, key);
             return false;  // we lost because someone removed before us, return false
         }
         // Fallthrough: some other key or tombstone, probe forward

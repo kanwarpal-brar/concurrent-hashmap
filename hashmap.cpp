@@ -5,9 +5,6 @@
 
 using namespace std;
 
-simple_record_manager<CASHashmap::table> * CASHashmap::recordmanager = new simple_record_manager<table>(MAX_THREADS);
-
-
 // allocate and zero data array
 void CASHashmap::table::allocateData(int tid, int capacity) {
     assert(capacity > 0);
@@ -47,6 +44,7 @@ CASHashmap::table::~table() {
  */
 CASHashmap::CASHashmap(const int _numThreads, const int _capacity)
 : numThreads(_numThreads), initCapacity(_capacity) {
+    recordmanager = new simple_record_manager<table>(MAX_THREADS);
     auto guard = recordmanager->getGuard(0);  // dummy tid
     currentTable = new(recordmanager->allocate<table>(0)) table(initCapacity, numThreads);
 }
@@ -58,6 +56,7 @@ CASHashmap::~CASHashmap() {
     if (t) {
         recordmanager->deallocate(0, t);
     }
+    delete recordmanager;
     // currentTable itself is an atomic pointer, not dynamically allocated, so no delete needed for it.
 }
 

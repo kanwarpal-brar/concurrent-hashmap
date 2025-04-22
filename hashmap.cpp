@@ -108,18 +108,20 @@ void CASHashmap::helpExpansion(const int tid, table * t) {
 void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
     TPRINT("Start Expansion")
     // auto guard = recordmanager->getGuard(tid); Assumption: guard already held
-    if (currentTable == t) {
-        // int cap = t->capacity;
-        auto mem = recordmanager->allocate<table>(tid);
-        table *t_new = new(mem) table(t, newSize, numThreads, tid);
-        if  (!currentTable.compare_exchange_strong(t, t_new)) {
-            t_new->old = nullptr; // override
-            recordmanager->deallocate(tid, t_new);  // failed to cas, delete the table
-            helpExpansion(tid, currentTable);  // let's help expand now
-        } else {
-            helpExpansion(tid, currentTable);  // expand the table
-            recordmanager->retire(tid, t);  // retire old table data
-        }
+    if (currentTable != t) {
+        helpExpansion(tid, currentTable);
+        return;
+    }
+    // current table matches, try to expand
+    auto mem = recordmanager->allocate<table>(tid);
+    table *t_new = new(mem) table(t, newSize, numThreads, tid);
+    if  (!currentTable.compare_exchange_strong(t, t_new)) {
+        t_new->old = nullptr; // override
+        recordmanager->deallocate(tid, t_new);  // failed to cas, delete the table
+        helpExpansion(tid, currentTable);  // let's help expand now
+    } else {
+        helpExpansion(tid, currentTable);  // expand the table
+        recordmanager->retire(tid, t);  // retire old table data
     }
 }
 
@@ -188,7 +190,10 @@ bool CASHashmap::insertIfAbsent(const int tid, const int & key, bool disableExpa
         // Fallthrough: we failed to find an empty spot or lost our spot. Probe to find next spot
     }
     // TODO: tune expansion parameters so we never fail insertion due to capacity; assert(false) here
-    return false;  // for now, insertion has failed due to capacity
+
+    // TODO: We failed to insert, force expansion; try this approach for now
+    startExpansion(tid, t, t->capacity * SIZEFACTOR);
+    return insertIfAbsent(tid, key);  // for now, insertion has failed due to capacity
 }
 
 

@@ -1,4 +1,4 @@
-GPP = g++-9
+GPP = g++
 FLAGS = -O3 -g
 FLAGS += -std=c++2a
 FLAGS += -fopenmp

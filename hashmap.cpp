@@ -5,6 +5,9 @@
 
 using namespace std;
 
+simple_record_manager<CASHashmap::table> CASHashmap::recordmanager = simple_record_manager<table>(MAX_THREADS);
+
+
 // allocate and zero data array
 void CASHashmap::table::allocateData(int tid, int capacity) {
     assert(capacity > 0);
@@ -44,19 +47,17 @@ CASHashmap::table::~table() {
  */
 CASHashmap::CASHashmap(const int _numThreads, const int _capacity)
 : numThreads(_numThreads), initCapacity(_capacity) {
-    recordmanager = new simple_record_manager<table>(MAX_THREADS);
-    auto guard = recordmanager->getGuard(0);  // dummy tid
-    currentTable = new(recordmanager->allocate<table>(0)) table(initCapacity, numThreads);
+    auto guard = recordmanager.getGuard(0);  // dummy tid
+    currentTable = new(recordmanager.allocate<table>(0)) table(initCapacity, numThreads);
 }
 
 // destructor: clean up any allocated memory, etc.
 CASHashmap::~CASHashmap() {
-    auto guard = recordmanager->getGuard(0); // dummy tid
+    auto guard = recordmanager.getGuard(0); // dummy tid
     table *t = currentTable;
     if (t) {
-        recordmanager->deallocate(0, t);
+        recordmanager.deallocate(0, t);
     }
-    delete recordmanager;
     // currentTable itself is an atomic pointer, not dynamically allocated, so no delete needed for it.
 }
 
@@ -106,21 +107,21 @@ void CASHashmap::helpExpansion(const int tid, table * t) {
 
 void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
     TPRINT("Start Expansion")
-    // auto guard = recordmanager->getGuard(tid); Assumption: guard already held
+    // auto guard = recordmanager.getGuard(tid); Assumption: guard already held
     if (currentTable != t) {
         helpExpansion(tid, currentTable);
         return;
     }
     // current table matches, try to expand
-    auto mem = recordmanager->allocate<table>(tid);
+    auto mem = recordmanager.allocate<table>(tid);
     table *t_new = new(mem) table(t, newSize, numThreads, tid);
     if  (!currentTable.compare_exchange_strong(t, t_new)) {
         t_new->old = nullptr; // override
-        recordmanager->deallocate(tid, t_new);  // failed to cas, delete the table
+        recordmanager.deallocate(tid, t_new);  // failed to cas, delete the table
         helpExpansion(tid, currentTable);  // let's help expand now
     } else {
         helpExpansion(tid, currentTable);  // expand the table
-        recordmanager->retire(tid, t);  // retire old table data
+        recordmanager.retire(tid, t);  // retire old table data
     }
 }
 
@@ -152,7 +153,7 @@ bool CASHashmap::insertIfAbsent(const int tid, const int & key, bool disableExpa
     assert(key != TOMBSTONE);
     TPRINT("Insert " << key);
 
-    auto guard = recordmanager->getGuard(tid);
+    auto guard = recordmanager.getGuard(tid);
 
     table *t = currentTable;
 
@@ -202,7 +203,7 @@ bool CASHashmap::erase(const int tid, const int & key, bool disableExpansion) {
     assert(key != TOMBSTONE);
     TPRINT("Erase " << key);
 
-    auto guard = recordmanager->getGuard(tid);
+    auto guard = recordmanager.getGuard(tid);
 
     table *t = currentTable;
 
@@ -237,7 +238,7 @@ bool CASHashmap::erase(const int tid, const int & key, bool disableExpansion) {
 // semantics: return the sum of all KEYS in the set
 // Note: This provides a snapshot sum, which might not be consistent in a concurrent environment
 int64_t CASHashmap::getSumOfKeys() {
-    auto guard = recordmanager->getGuard(0); // dummy id
+    auto guard = recordmanager.getGuard(0); // dummy id
     table * t = currentTable;
     int64_t sum = 0;
     for (int i = 0; i < t->capacity; i++) {

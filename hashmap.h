@@ -56,7 +56,7 @@ private:
         ~table();
     };
 
-    static simple_record_manager<table> * recordmanager;
+    static simple_record_manager<table> recordmanager;
 
     bool expandAsNeeded(const int tid, table * t, int i);
     void helpExpansion(const int tid, table * t);

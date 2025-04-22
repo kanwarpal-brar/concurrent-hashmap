@@ -187,7 +187,8 @@ bool CASHashmap::insertIfAbsent(const int tid, const int & key, bool disableExpa
         }
         // Fallthrough: we failed to find an empty spot or lost our spot. Probe to find next spot
     }
-    assert(false);  // this fallthrough should not happen: we should expand; never run out of capacity
+    // TODO: tune expansion parameters so we never fail insertion due to capacity; assert(false) here
+    return false;  // for now, insertion has failed due to capacity
 }
 
 

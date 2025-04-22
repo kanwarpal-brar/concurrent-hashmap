@@ -16,6 +16,14 @@ using namespace std;
 #define PROBE_MAX_TOLERANCE 45  // at most, we will allow probing to 10 before expansion
 #define SIZEFACTOR 5  // how large of a size to expand to
 
+/*
+TODO:
+- Resolve double free issue for tables with record manager
+    - likely has to do with one table's "data" belonging to a new one's "old"
+    - Could use an alternative approach: ditch tombstones for record-managed buckets; chaining hashmp
+    - Could just swap to TLE, would make my life easier
+*/
+
 class CASHashmap {
 private:
     enum {

@@ -33,6 +33,7 @@ CASHashmap::table::table(int _capacity, int numThreads, int tid): capacity(_capa
 
 // destructor
 CASHashmap::table::~table() {
+    PRINT("Table Destructor " << this)
     delete[] data;
     delete[] old;
 }
@@ -105,6 +106,7 @@ void CASHashmap::helpExpansion(const int tid, table * t) {
 
 
 void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
+    TPRINT("Start Expansion")
     // auto guard = recordmanager->getGuard(tid); Assumption: guard already held
     if (currentTable == t) {
         // int cap = t->capacity;
@@ -113,14 +115,17 @@ void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
         if  (!currentTable.compare_exchange_strong(t, t_new)) {
             t_new->old = nullptr; // override
             recordmanager->deallocate(tid, t_new);  // failed to cas, delete the table
-        } else recordmanager->retire(tid, t);  // retire old table data
-        // else TPRINT("Expanding Table at: " << timer.getElapsedMillis() << "ms " << cap << "->" << newSize)
+            helpExpansion(tid, currentTable);  // let's help expand now
+        } else {
+            helpExpansion(tid, currentTable);  // expand the table
+            recordmanager->retire(tid, t);  // retire old table data
+        }
     }
-    helpExpansion(tid, currentTable);  // let's help expand now
 }
 
 
 void CASHashmap::migrate(const int tid, table * t, int myChunk) {
+    TPRINT("Migrate Chunk " << myChunk)
     // assumption: guard already held
     int start = myChunk * CHUNKSIZE;
     int end = min(start + (int)CHUNKSIZE, t->oldCapacity);
@@ -144,6 +149,7 @@ void CASHashmap::migrate(const int tid, table * t, int myChunk) {
 bool CASHashmap::insertIfAbsent(const int tid, const int & key, bool disableExpansion) {
     assert(key != EMPTY);
     assert(key != TOMBSTONE);
+    TPRINT("Insert " << key);
 
     auto guard = recordmanager->getGuard(tid);
 
@@ -170,6 +176,7 @@ bool CASHashmap::insertIfAbsent(const int tid, const int & key, bool disableExpa
             int null = EMPTY;  // local copy
             if (t->data[index].compare_exchange_strong(null, key)) {
                 t->approxInserts->inc(tid);
+                TPRINT("Insert Success " << key)
                 return true;  // CAS success, we inserted
             } else {
                 // Failed CAS, someone inserted
@@ -188,6 +195,7 @@ bool CASHashmap::insertIfAbsent(const int tid, const int & key, bool disableExpa
 bool CASHashmap::erase(const int tid, const int & key, bool disableExpansion) {
     assert(key != EMPTY);
     assert(key != TOMBSTONE);
+    TPRINT("Erase " << key);
 
     auto guard = recordmanager->getGuard(tid);
 
@@ -208,6 +216,7 @@ bool CASHashmap::erase(const int tid, const int & key, bool disableExpansion) {
             int k = key;  // local duplicate
             if (t->data[index].compare_exchange_strong(k, TOMBSTONE)) {
                 t->approxErase->inc(tid);
+                TPRINT("Erase Success " << key);
                 return true;  // successfully removed
             }
             // else: failed CAS, must mean someone removed before us or expansion

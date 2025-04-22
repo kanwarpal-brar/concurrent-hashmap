@@ -28,11 +28,19 @@ using namespace std;
 #endif
 
 #ifndef TPRINT
+#ifndef NDEBUG
 #define TPRINT(contents) { stringstream ss; ss<<"tid="<<tid<<": "<<contents<<endl; cout<<ss.str(); }
+#else
+#define TPRINT(contents) {}
+#endif
 #endif
 
 #ifndef PRINT
-#define PRINT(name) { cout<<(#name)<<"="<<name<<endl; }
+#ifndef NDEBUG
+#define PRINT(contents) { stringstream ss; ss<<contents<<endl; cout<<ss.str(); }
+#else
+#define PRINT(contents) {}
+#endif
 #endif
 
 class ElapsedTimer {

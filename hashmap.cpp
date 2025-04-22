@@ -119,9 +119,9 @@ void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
         t_new->old = nullptr; // override
         recordmanager.deallocate(tid, t_new);  // failed to cas, delete the table
         helpExpansion(tid, currentTable);  // let's help expand now
-        TPRINT("Finished Expansion " << newSize);
     } else {
         helpExpansion(tid, currentTable);  // expand the table
+        TPRINT("Finished Expansion " << newSize);
         recordmanager.retire(tid, t);  // retire old table data
     }
 }

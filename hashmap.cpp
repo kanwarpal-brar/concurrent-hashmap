@@ -34,7 +34,7 @@ CASHashmap::table::table(int _capacity, int numThreads, int tid): capacity(_capa
 // destructor
 CASHashmap::table::~table() {
     PRINT("Table Destructor " << this)
-
+    // TODO: this does not work to prevent double free from record manager
     // Safety check for old/data retire on concurrent tables
     if (data != nullptr) {
         delete[] data;
@@ -124,6 +124,7 @@ void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
     auto mem = recordmanager.allocate<table>(tid);
     table *t_new = new(mem) table(t, newSize, numThreads, tid);
     if  (!currentTable.compare_exchange_strong(t, t_new)) {
+        // TODO: override is not sufficient to prevent table overlap and double free
         t_new->old = nullptr; // override
         recordmanager.deallocate(tid, t_new);  // failed to cas, delete the table
         helpExpansion(tid, currentTable);  // let's help expand now

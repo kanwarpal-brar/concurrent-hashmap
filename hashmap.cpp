@@ -34,8 +34,16 @@ CASHashmap::table::table(int _capacity, int numThreads, int tid): capacity(_capa
 // destructor
 CASHashmap::table::~table() {
     PRINT("Table Destructor " << this)
-    delete[] data;
-    delete[] old;
+
+    // Safety check for old/data retire on concurrent tables
+    if (data != nullptr) {
+        delete[] data;
+        data = nullptr;
+    }
+    if (old != nullptr) {
+        delete[] old;
+        old = nullptr;
+    }
 }
 
 

@@ -36,14 +36,14 @@ CASHashmap::table::~table() {
     PRINT("Table Destructor " << this)
     // TODO: this does not work to prevent double free from record manager
     // Safety check for old/data retire on concurrent tables
-    // if (data != nullptr) {
-    //     delete[] data;
-    //     data = nullptr;
-    // }
-    // if (old != nullptr) {
-    //     delete[] old;
-    //     old = nullptr;
-    // }
+    if (data != nullptr) {
+        delete[] data;
+        data = nullptr;
+    }
+    if (old != nullptr) {
+        delete[] old;
+        old = nullptr;
+    }
 }
 
 

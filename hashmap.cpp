@@ -133,6 +133,7 @@ void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
         helpExpansion(tid, currentTable);  // expand the table
         TPRINT("Finished Expansion " << newSize);
         TPRINT("Table Retire")
+        t->old = nullptr; // override
         recordmanager.retire(tid, t);  // retire old table data
     }
 }

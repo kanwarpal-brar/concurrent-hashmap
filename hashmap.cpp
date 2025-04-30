@@ -36,14 +36,14 @@ CASHashmap::table::~table() {
     PRINT("Table Destructor " << this)
     // TODO: this does not work to prevent double free from record manager
     // Safety check for old/data retire on concurrent tables
-    if (data != nullptr) {
-        delete[] data;
-        data = nullptr;
-    }
-    if (old != nullptr) {
-        delete[] old;
-        old = nullptr;
-    }
+    // if (data != nullptr) {
+    //     delete[] data;
+    //     data = nullptr;
+    // }
+    // if (old != nullptr) {
+    //     delete[] old;
+    //     old = nullptr;
+    // }
 }
 
 
@@ -75,7 +75,6 @@ int CASHashmap::probeTolerance(const int tid, table *t) {
 }
 
 bool CASHashmap::expandAsNeeded(const int tid, table * t, int i) {
-    auto guard = recordmanager.getGuard(tid);
     // assumption: guard already held
     helpExpansion(tid, t);  // start off by seeing if there's an expansion to help
     int half = (t->capacity) / 2;
@@ -99,7 +98,6 @@ bool CASHashmap::expandAsNeeded(const int tid, table * t, int i) {
 
 void CASHashmap::helpExpansion(const int tid, table * t) {
     // assumption: guard already held
-    auto guard = recordmanager.getGuard(tid);
     int totalOldChunks = ceil(t->oldCapacity / CHUNKSIZE);
     if (totalOldChunks == 0) return;  // nothing to expand, move on
     while (t->chunksClaimed < totalOldChunks) {
@@ -118,7 +116,6 @@ void CASHashmap::helpExpansion(const int tid, table * t) {
 void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
     TPRINT("Start Expansion")
     // auto guard = recordmanager.getGuard(tid); Assumption: guard already held
-    auto guard = recordmanager.getGuard(tid);
     if (currentTable != t) {
         helpExpansion(tid, currentTable);
         return;
@@ -141,7 +138,6 @@ void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
 
 void CASHashmap::migrate(const int tid, table * t, int myChunk) {
     TPRINT("Migrate Chunk " << myChunk)
-    auto guard = recordmanager.getGuard(tid);
     // assumption: guard already held
     int start = myChunk * CHUNKSIZE;
     int end = min(start + (int)CHUNKSIZE, t->oldCapacity);

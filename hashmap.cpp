@@ -126,11 +126,13 @@ void CASHashmap::startExpansion(const int tid, table * t, const int newSize) {
     if  (!currentTable.compare_exchange_strong(t, t_new)) {
         // TODO: override is not sufficient to prevent table overlap and double free
         t_new->old = nullptr; // override
+        TPRINT("Table Dealloc")
         recordmanager.deallocate(tid, t_new);  // failed to cas, delete the table
         helpExpansion(tid, currentTable);  // let's help expand now
     } else {
         helpExpansion(tid, currentTable);  // expand the table
         TPRINT("Finished Expansion " << newSize);
+        TPRINT("Table Retire")
         recordmanager.retire(tid, t);  // retire old table data
     }
 }

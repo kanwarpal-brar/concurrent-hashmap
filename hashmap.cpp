@@ -33,7 +33,7 @@ CASHashmap::table::table(int _capacity, int numThreads, int tid): capacity(_capa
 
 // destructor
 CASHashmap::table::~table() {
-    PRINT("Table Destructor " << this)
+    PRINT("Table Destructor " << this << " addrs " << data << " " << old)
     // TODO: this does not work to prevent double free from record manager
     // Safety check for old/data retire on concurrent tables
     if (data != nullptr) {
